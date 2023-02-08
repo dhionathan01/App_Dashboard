@@ -4,6 +4,9 @@
         public $data_fim;
         public $numeroVendas;
         public $totalVendas;
+        public $clientesAtivos;
+        public $clientesInativos;
+        public $totalDespesas;
 
         public function __get($atributo){
             return $this->$atributo;
@@ -68,18 +71,59 @@
 
             return $stmt->fetch(PDO::FETCH_OBJ)->total_vendas;
         }
+
+        public function getClientesAtivos(){
+            $sql = "SELECT
+                        count(*) as clientesAtivos 
+                    FROM
+                        tb_clientes 
+                    WHERE cliente_ativo = 1";
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->execute();
+
+            return $stmt->fetch(PDO::FETCH_OBJ)->clientesAtivos;
+        }
+        public function getClientesInativos(){
+            $sql = "SELECT
+                        count(*) as clientesInativos 
+                    FROM
+                        tb_clientes 
+                    WHERE cliente_ativo = 0";
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->execute();
+
+            return $stmt->fetch(PDO::FETCH_OBJ)->clientesInativos;
+        }
+        public function getTotalDespesas(){
+            $sql = "SELECT
+                        sum(total) as totalDespesas 
+                    FROM
+                        tb_despesas";
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->execute();
+
+            return $stmt->fetch(PDO::FETCH_OBJ)->totalDespesas;
+        }
     }
 
     // Instanciando objetos
 
     $dashboard = new Dashboard();
+    $competencia = explode('-', $_GET['competencia'] );
+    $ano = $competencia[0];
+    $mes = $competencia[1];
 
-    $dashboard->__set('data_inicio', '2018-08-01');
-    $dashboard->__set('data_fim', '2018-08-31');
+    $dias_do_mes = cal_days_in_month(CAL_GREGORIAN, $mes, $ano);
+
+    $dashboard->__set('data_inicio', $ano.'-'.$mes.'-01');
+    $dashboard->__set('data_fim', $ano.'-'.$mes.'-'.$dias_do_mes);
 
     $conexao = new Conexao();
     $bd = new Bd($conexao, $dashboard);
     $dashboard->__set('numeroVendas', $bd->getNumeroVendas());
     $dashboard->__set('totalVendas', $bd->getTotalVendas());
-    print_r($dashboard);
+    $dashboard->__set('clientesAtivos', $bd->getClientesAtivos());
+    $dashboard->__set('clientesInativos', $bd->getClientesInativos());
+    $dashboard->__set('totalDespesas', $bd->gettotalDespesas());
+    echo json_encode($dashboard);
 ?>
